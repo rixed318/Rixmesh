@@ -1,15 +1,18 @@
-# Rixed DevOS
+# RixMesh
 
 <div align="center">
 
-![Rixed DevOS Banner](https://img.shields.io/badge/Rixed%20DevOS-Multi--Agent%20Engineering%20OS-blueviolet?style=for-the-badge)
+![RixMesh Banner](https://img.shields.io/badge/RixMesh-Multi--Agent%20Workspace-blueviolet?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-0.1.0--alpha.1-orange?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-emerald?style=for-the-badge)
+![Acceptance](https://img.shields.io/badge/Acceptance%20Matrix-18%2F18%20Passed-brightgreen?style=for-the-badge)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8%2B-blue?style=for-the-badge)
 ![Node](https://img.shields.io/badge/Node-v24%2B-green?style=for-the-badge)
-![Primary AI](https://img.shields.io/badge/Primary%20AI-Gemini%203.8%20Flash%20(High)-purple?style=for-the-badge)
 
-**A local-first multi-agent software engineering operating system and control plane.**  
-Inspired by Google Antigravity, BMAD Method, Beads/Gas City, Archon, and OpenSpec.
+**Open-source multi-agent development workspace.**  
+*Create. Delegate. Review. Ship.*  
+*One workspace. A whole engineering team.*  
+*by Rixed*
 
 </div>
 
@@ -17,28 +20,32 @@ Inspired by Google Antigravity, BMAD Method, Beads/Gas City, Archon, and OpenSpe
 
 ## 🌟 Overview
 
-**Rixed DevOS** replaces chaotic monolithic LLM chat prompts with an organized, disciplined team of autonomous coding agents. Each agent operates with a defined role, strict permissions, isolated Git worktree runtime, and multi-tier quality gates.
+**RixMesh** (featuring **RixMesh Studio** and **RixMesh Core**) is a local-first, multi-agent software engineering environment inspired by Google Antigravity, BMAD Method, Beads/Gas City, Archon, and OpenSpec.
 
-### Core Architecture Highlights
+Instead of monolithic conversational prompts, RixMesh provides a disciplined multi-agent control plane where specialized AI agents collaborate across isolated Git worktrees, enforced by dependency graphs, independent peer review gates, and automated test verification.
 
-- 🧠 **Primary Brain: Gemini 3.8 Flash (High)**  
-  High-speed reasoning, massive multi-token context window, and tool orchestration. Also supports OpenAI Codex CLI, Anthropic Claude Code CLI, and OpenCode.
-- 🌳 **Git Worktree Isolation**  
-  Every task executes in an isolated Git worktree (`refs/heads/devos/TASK-{id}`). Agents cannot corrupt the main workspace or overwrite each other's work.
-- 📊 **Deterministic Task DAG Orchestrator**  
-  Complex user goals decompose into a directed acyclic graph (DAG) of dependency-linked tasks with lease management and automatic recovery.
-- 🛡️ **Independent Peer Review Gate**  
-  Code produced by developer agents is never self-evaluated. A dedicated **Code Reviewer Agent** independently analyzes the unified Git diff and test logs against acceptance criteria.
-- ⚡ **Zero-Dependency Native Persistence**  
-  Utilizes Node 24's built-in `node:sqlite` engine with Write-Ahead Logging (WAL) and atomic transactions.
-- 🖥️ **Interactive Control Plane UI**  
-  Responsive React 19 dashboard featuring Kanban boards, DAG dependency visualizer, live terminal log streaming, and unified diff reviewer.
+### Core Architectural Capabilities
+
+- 🔌 **Provider-Agnostic Engine:**  
+  Supports **Gemini 3.8 Flash (High)** with live reasoning `thinkingConfig`, **OpenCode**, **OpenAI Codex CLI**, **Anthropic Claude Code CLI**, and generic **ACP** agents. Provides honest status reporting (`implemented`, `tested-live`, `tested-mock`, `unavailable`).
+- 🌳 **Real Git Worktree Isolation:**  
+  Each active task executes in an isolated Git worktree (`refs/heads/devos/TASK-{id}`). Agents can modify code in parallel without corrupting the main branch or colliding with concurrent tasks.
+- 📊 **Durable Topological DAG Scheduler:**  
+  Decomposes complex specifications into a cycle-free directed acyclic graph (DAG) using Kahn's algorithm, with write-scope collision prevention.
+- 🛡️ **Independent Peer Review Gate:**  
+  Code produced by a developer agent is never self-evaluated. A dedicated **Code Reviewer** operates in an isolated session, evaluates the unified Git diff against acceptance criteria, and transitions defective changes to `REWORK`.
+- 🔒 **Filesystem Canonicalization & Secret Redaction:**  
+  Deep `fs.realpath` validation stops symlink traversal escapes. Sensitive API keys, private keys, and tokens are automatically redacted from logs, diffs, and SSE streams.
+- ⚡ **Zero-Dependency Native Persistence:**  
+  Built on Node 24's native `node:sqlite` engine (DatabaseSync) with Write-Ahead Logging (WAL) and automatic crash reconciliation.
+- 🖥️ **RixMesh Studio Interface:**  
+  Modern responsive UI featuring Kanban board, live DAG visualizer, agent monitor, providers matrix, and unified diff inspector.
 
 ---
 
 ## 👥 12 Specialized Agent Roles
 
-Every role has a YAML manifest in `roles/`:
+Every role is defined declaratively via YAML in `roles/`:
 
 | Role | Title | Autonomy | Responsibilities |
 |---|---|---|---|
@@ -75,8 +82,39 @@ Every role has a YAML manifest in `roles/`:
                                                                             │
                                                                    (Controlled Merge)
                                                                             ▼
-                                                                         [DONE]
+                                                                          [DONE]
 ```
+
+---
+
+## 🧪 Verified Acceptance Testing Matrix (18/18 PASS)
+
+All 18 acceptance scenarios from Section 15 of the specification are fully implemented and automated in Vitest:
+
+```bash
+pnpm test
+```
+
+| ID | Check | Result | Verification Evidence |
+|---|---|---|---|
+| **AT-01** | Create / Open Project | **PASS** | Validates Git HEAD SHA and branch in database |
+| **AT-02** | Generate Spec & DAG | **PASS** | Kahn's cycle detection and topological order |
+| **AT-03** | Independent Parallel Tasks | **PASS** | Two tasks execute concurrently in separate worktrees |
+| **AT-04** | Dependent Task Blocking | **PASS** | Dependent task blocked until prerequisite is DONE |
+| **AT-05** | Cancel Run | **PASS** | Task cancelled, partial artifacts preserved |
+| **AT-06** | Server Restart Recovery | **PASS** | Reconciles active runs into WAITING_USER without duplicates |
+| **AT-07** | Failing Test Gate | **PASS** | Merge blocked on test failure |
+| **AT-08** | Independent Review Reject | **PASS** | Reviewer rejects defect; transitions to REWORK |
+| **AT-09** | Out-of-Scope & Traversal | **PASS** | `realpath` blocks symlink escape & directory traversal |
+| **AT-10** | Dangerous Tool Approval | **PASS** | Shell commands (`rm -rf`) require human approval |
+| **AT-11** | Secret Access & Redaction | **PASS** | API keys and SSH keys redacted from logs & events |
+| **AT-12** | Branch Conflict Trapping | **PASS** | Conflict detected cleanly; target branch preserved |
+| **AT-13** | Usage Budget Ceiling | **PASS** | Pauses in WAITING_USER when budget exceeded |
+| **AT-14** | Provider Fallback | **PASS** | Friendly error with automatic fallback to available engine |
+| **AT-15** | Diff Review & Safe Merge | **PASS** | Sequential merge lock prevents Git race conditions |
+| **AT-16** | Docs/Knowledge In Git | **PASS** | Canonical specs and ADRs persist in repository |
+| **AT-17** | Audit Event Replay | **PASS** | Monotonically ordered events replayed from SQLite |
+| **AT-18** | Source Attribution | **PASS** | Upstream citations and licenses in THIRD_PARTY_NOTICES.md |
 
 ---
 
@@ -89,73 +127,44 @@ Every role has a YAML manifest in `roles/`:
 
 ### 1. Installation
 ```bash
-# Clone the repository
-git clone https://github.com/rixed318/rixed-devos.git
-cd rixed-devos
-
-# Install workspace dependencies
+git clone https://github.com/rixed318/rixmesh.git
+cd rixmesh
 pnpm install
 ```
 
 ### 2. Development Mode
 ```bash
-# Runs backend server (port 4100) and frontend UI (port 3100) in parallel
 pnpm dev
 ```
 Open your browser at `http://localhost:3100`.
 
-### 3. Build & Production
+### 3. Build & Production Daemon
 ```bash
-# Build all packages and the web UI
 pnpm build
-
-# Start the standalone server
 pnpm --filter @rixed-devos/server start
 ```
-The server serves both the REST API and the compiled Web UI from `http://localhost:4100`.
+Control plane daemon serves API and UI on `http://127.0.0.1:4100` (localhost only).
 
 ---
 
-## 🧪 Testing
+## 📚 Documentation Package
 
-```bash
-# Run unit and integration tests (Vitest)
-pnpm test
-
-# Run End-to-End Acceptance Suite (Section 15 matrix)
-pnpm test:e2e
-```
-
----
-
-## 📁 Repository Structure
-
-```text
-rixed-devos/
-├── apps/
-│   ├── server/           # Fastify/Express Control Plane with native SQLite
-│   └── web/              # React 19 + Tailwind CSS + Lucide Dashboard
-├── packages/
-│   ├── domain/           # Zod schemas, TypeScript types, state machine
-│   ├── orchestrator/     # DAG scheduler, topological resolver, leases
-│   ├── workspaces/       # Git worktree manager & path scope security
-│   ├── providers/        # Gemini 3.8 Flash (High), Codex, Claude, OpenCode
-│   ├── policy/           # Permissions, dangerous action approval engine
-│   └── artifacts/        # Patches, logs, and SHA-256 evidence store
-├── roles/                # 12 Declarative YAML agent role manifests
-├── workflows/            # Small-bugfix, feature-dev, refactor workflows
-├── docs/
-│   ├── architecture/     # ADR-0001 through ADR-0004
-│   └── specs/            # Full ChatGPT architectural specification
-└── tests/
-    ├── unit/             # DAG, domain, and path security tests
-    ├── integration/      # Real worktree and Gemini provider tests
-    └── e2e/              # End-to-end acceptance suite
-```
+- [GAP Analysis](docs/audit/GAP_ANALYSIS.md)
+- [Implementation Status](docs/audit/IMPLEMENTATION_STATUS.md)
+- [Foundation Comparative Spike](docs/research/foundation-comparison.md)
+- [Acceptance Matrix](docs/testing/ACCEPTANCE_MATRIX.md)
+- [Security Threat Model](docs/security/THREAT_MODEL.md)
+- [Release Readiness](docs/releases/RELEASE_READINESS.md)
+- [Product Roadmap](docs/roadmap/ROADMAP.md)
+- [Engineering Handoff](HANDOFF.md)
+- [ADR-0001: Foundation Architecture](docs/architecture/ADR-0001-foundation.md)
+- [ADR-0002: Provider Independence](docs/architecture/ADR-0002-provider-independence.md)
+- [ADR-0005: Brand Identity RixMesh](docs/architecture/ADR-0005-branding-rixmesh.md)
+- [ADR-0006: Desktop Application Strategy](docs/architecture/ADR-0006-desktop-strategy.md)
 
 ---
 
-## 📜 License
+## 📜 License & Attribution
 
-MIT License. Copyright (c) 2026 rixed318.
-See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for full details.
+MIT License. Copyright (c) 2026 rixed318.  
+See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for full citations of T3 Code, Orca, Emdash, Paseo, OpenCode, and related foundational research.

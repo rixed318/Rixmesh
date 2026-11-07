@@ -81,3 +81,4 @@ pnpm build
 2. **Phase 2 Development:**
    - Implement Tauri 2.0 desktop shell in `apps/desktop`.
    - Embed Monaco Editor and interactive terminal tabs in `apps/web`.
+

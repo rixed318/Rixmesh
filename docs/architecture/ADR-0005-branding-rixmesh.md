@@ -34,3 +34,4 @@ Several alternatives were analyzed and screened against existing projects and tr
 ## Consequences
 - **Positive**: Cohesive, professional public identity suitable for desktop apps, CLI tools, and agent ecosystems. Zero disruption to working code during the initial audit phase.
 - **Negative**: Temporary dual-presence of `@rixed-devos` package names in internal `package.json` files alongside the user-facing "RixMesh" brand until Phase 2.
+

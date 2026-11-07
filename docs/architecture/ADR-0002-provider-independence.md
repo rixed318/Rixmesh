@@ -30,3 +30,4 @@ Antigravity-inspired development workspaces require multi-model flexibility. Whi
 ## Consequences
 - **Positive**: Complete vendor independence; developers can switch between cloud APIs, official subscription CLIs, and offline local models without changing workflows.
 - **Negative**: Adapter implementations must normalize heterogeneous provider events and error codes into a consistent event stream.
+

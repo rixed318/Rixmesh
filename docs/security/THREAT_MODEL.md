@@ -73,3 +73,4 @@
 - Read-only mounts for repository root with a writable layer strictly mounted to the worktree path.
 - Non-root UID execution with dropped Linux capabilities (`--cap-drop=ALL`) and `no-new-privileges`.
 - Loopback network isolation (`--network=none` or explicit egress proxy allowlist).
+

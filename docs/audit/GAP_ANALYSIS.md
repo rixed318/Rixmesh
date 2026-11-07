@@ -31,3 +31,4 @@
    - The original `gemini-provider.ts` yielded static banners containing "Gemini 3.8 Flash (High)" without checking whether an API key was present or making an HTTP call, leading to false confidence.
 3. **Acceptance Test Matrix Drifting:**
    - The original E2E runner modified test scenario IDs and omitted negative checks (test failures, budget overruns, reviewer rejections, merge conflicts).
+

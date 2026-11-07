@@ -50,3 +50,4 @@
   - macOS: Apple Developer ID signed and notarized `.dmg` (Universal binary)
 - [ ] Multi-project workspace management with independent Git remotes.
 - [ ] Comprehensive documentation and community role catalog.
+

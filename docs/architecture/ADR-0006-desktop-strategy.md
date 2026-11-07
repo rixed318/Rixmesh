@@ -27,3 +27,4 @@ RixMesh requires a cross-platform desktop application running on Linux, Windows,
 ## Consequences
 - **Positive**: Low resource overhead, fast launch times, native OS look-and-feel, clean separation between desktop shell and headless server daemon.
 - **Negative**: Windows requires the presence of Microsoft Edge WebView2 runtime (pre-installed on Windows 10/11); Linux requires `webkit2gtk-4.1` system libraries.
+

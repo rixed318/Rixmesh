@@ -42,3 +42,4 @@ Before tagging and pushing `v0.1.0-alpha.1` to GitHub:
 - [x] **Filesystem Traversal Protection:** Canonical `realpath` checks enabled to stop symlink traversal attacks.
 - [x] **Model Independence:** Provider layer supports multiple backends (Gemini, OpenCode, Codex, Claude, Mock) without hardcoded lock-in.
 - [ ] **GitHub Remote Setup:** Establish public remote `rixed318/rixmesh` (or initial `rixed318/rixed-devos`) using SSH or `gh` CLI credentials (no PAT in URLs).
+

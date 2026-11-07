@@ -29,14 +29,14 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
           <div>
             <h1 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-              Rixed DevOS
+              RixMesh Studio
               <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium">
-                v1.0.0
+                v0.1.0-alpha.1
               </span>
             </h1>
             <div className="text-xs text-gray-400 flex items-center gap-2">
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              Primary Brain: <strong className="text-purple-300">Gemini 3.8 Flash (High)</strong>
+              Multi-Agent Workspace <span className="text-gray-500">•</span> <span className="text-gray-400">by Rixed</span>
             </div>
           </div>
         </div>

@@ -59,3 +59,4 @@
    - The current build produces a web control plane + Node.js backend. Packaging as a self-contained `.AppImage` (Linux), `.exe` installer (Windows), and `.dmg` (macOS) is planned via Tauri in v0.1.0-alpha.2.
 3. **Multi-User / Remote Mode:**
    - Current release is strictly single-user, local-first, binding to `127.0.0.1`. Remote access with mutual TLS and bearer token authentication is deferred to post-MVP.
+

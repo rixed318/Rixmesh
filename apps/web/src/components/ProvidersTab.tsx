@@ -38,9 +38,22 @@ export const ProvidersTab: React.FC<ProvidersTabProps> = ({ providers }) => {
                     <span className="font-mono text-xs font-bold uppercase tracking-wider text-gray-400">
                       {id}
                     </span>
+                    {info.status && (
+                      <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded border ${
+                        info.status === 'tested-live'
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                          : info.status === 'implemented'
+                          ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                          : info.status === 'tested-mock'
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                          : 'bg-red-500/20 text-red-300 border-red-500/30'
+                      }`}>
+                        {info.status}
+                      </span>
+                    )}
                     {isPrimary && (
                       <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-sm flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" /> Primary Engine
+                        <Sparkles className="w-3 h-3" /> Default Engine
                       </span>
                     )}
                   </div>

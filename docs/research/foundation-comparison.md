@@ -86,3 +86,4 @@ Rather than executing an invasive, hard-to-maintain fork of a 30,000-line monoli
 2. **Integration with Existing Open-Source UI Assets:**
    - Because `apps/web` is a standard Vite React application, we can cleanly import and reuse UI components (such as diff viewers, Monaco editor tabs, and terminal xterm widgets) from T3 Code and Emdash without inheriting their architectural debt or state models.
    - For desktop packaging, our architecture directly packages into **Tauri** (lightweight ~15MB binary using OS webview) or **Electron**, maintaining desktop executables for Linux, Windows, and macOS.
+
