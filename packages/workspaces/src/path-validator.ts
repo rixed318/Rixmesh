@@ -1,24 +1,33 @@
 import path from 'node:path';
+import fs from 'node:fs';
 import picomatch from 'picomatch';
 
+export interface PathValidationResult {
+  allowed: boolean;
+  reason?: string;
+  canonicalPath?: string;
+}
+
 export class PathScopeValidator {
-  private static defaultForbidden = [
-    '.git/**',
-    '.git',
-    '.env*',
-    'secrets/**',
+  public static readonly defaultForbidden = [
+    '**/.git/**',
+    '**/.git',
+    '**/.env*',
+    '**/secrets/**',
     '**/*id_rsa*',
     '**/*id_ed25519*',
+    '**/*.pem',
+    '**/*.key',
   ];
 
   /**
-   * Checks if a target file path is safe to write to, given allowed globs and forbidden globs.
+   * Fast lexical check against forbidden patterns and glob scopes.
    */
   public static isPathAllowed(
     filePath: string,
     allowedScopes: string[] = ['**/*'],
     forbiddenScopes: string[] = []
-  ): { allowed: boolean; reason?: string } {
+  ): PathValidationResult {
     // Normalize path and remove leading slashes
     const normalized = path.normalize(filePath).replace(/^(\.\/|\/)/, '');
 
@@ -47,9 +56,64 @@ export class PathScopeValidator {
     }
 
     if (!matchedAllowed) {
-      return { allowed: false, reason: `Path does not match allowed write scopes: ${allowedScopes.join(', ')}` };
+      return {
+        allowed: false,
+        reason: `Path does not match allowed write scopes: ${allowedScopes.join(', ')}`,
+      };
     }
 
     return { allowed: true };
+  }
+
+  /**
+   * Deep filesystem check verifying that target file resolves strictly within workspace root,
+   * detecting symlinks pointing outside the workspace and realpath escapes.
+   */
+  public static isSafeFilesystemTarget(
+    workspaceRoot: string,
+    relativeFilePath: string,
+    allowedScopes: string[] = ['**/*'],
+    forbiddenScopes: string[] = []
+  ): PathValidationResult {
+    // 1. Lexical checks first
+    const lexicalCheck = this.isPathAllowed(relativeFilePath, allowedScopes, forbiddenScopes);
+    if (!lexicalCheck.allowed) {
+      return lexicalCheck;
+    }
+
+    try {
+      const rootCanonical = fs.realpathSync(workspaceRoot);
+      const targetAbsolute = path.resolve(rootCanonical, relativeFilePath);
+
+      // Verify prefix strictly matches rootCanonical
+      if (!targetAbsolute.startsWith(rootCanonical + path.sep) && targetAbsolute !== rootCanonical) {
+        return {
+          allowed: false,
+          reason: 'Path traversal detected: target resolves outside workspace root',
+        };
+      }
+
+      // Check if file or existing ancestor is a symlink pointing outside
+      let current = targetAbsolute;
+      while (current !== rootCanonical && current !== path.dirname(current)) {
+        if (fs.existsSync(current)) {
+          const stats = fs.lstatSync(current);
+          if (stats.isSymbolicLink()) {
+            const real = fs.realpathSync(current);
+            if (!real.startsWith(rootCanonical + path.sep) && real !== rootCanonical) {
+              return {
+                allowed: false,
+                reason: `Symlink escape detected: ${current} points outside workspace (${real})`,
+              };
+            }
+          }
+        }
+        current = path.dirname(current);
+      }
+
+      return { allowed: true, canonicalPath: targetAbsolute };
+    } catch (err: any) {
+      return { allowed: false, reason: `Filesystem resolution error: ${err.message}` };
+    }
   }
 }

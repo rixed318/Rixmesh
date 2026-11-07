@@ -20,16 +20,18 @@ export class ClaudeProvider implements CodingAgentAdapter {
       const { stdout } = await execFileAsync('claude', ['--version']);
       return {
         available: true,
+        status: 'implemented',
         reason: `Found local installation: ${stdout.trim()}`,
-        capabilities: ['cli-exec', 'code-generation', 'tools:fs', 'tools:bash'],
+        capabilities: ['cli-exec', 'diff-generation', 'interactive-approval'],
         models: ['claude-3-7-sonnet', 'claude-3-5-sonnet'],
       };
     } catch {
       return {
         available: false,
-        reason: 'claude executable not found in PATH',
-        capabilities: [],
-        models: [],
+        status: 'unavailable',
+        reason: 'claude binary not found in PATH',
+        capabilities: ['cli-exec'],
+        models: ['claude-3-7-sonnet'],
       };
     }
   }
@@ -58,7 +60,7 @@ export class ClaudeProvider implements CodingAgentAdapter {
       type: 'message_delta',
       seq: seq++,
       timestamp: nowIso(),
-      payload: { text: `[Claude Code] Executing task "${session.input.task.title}"...\n` },
+      payload: { text: `[Claude Code CLI] Executing task "${session.input.task.title}"...\n` },
     };
 
     yield {

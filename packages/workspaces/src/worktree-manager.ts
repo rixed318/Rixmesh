@@ -74,7 +74,8 @@ export class GitWorktreeManager {
    * Returns git diff between working state and baseline SHA.
    */
   public static async getDiff(worktreePath: string, baseSha?: string): Promise<string> {
-    // Stage untracked files briefly to capture diff if any, or diff against baseSha
+    // Stage untracked files with intent-to-add so git diff includes newly created files
+    await this.runGit(['add', '-N', '.'], worktreePath).catch(() => {});
     if (baseSha) {
       return this.runGit(['diff', baseSha], worktreePath);
     }

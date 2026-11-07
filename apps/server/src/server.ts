@@ -8,6 +8,7 @@ import { RoleService } from './services/role-service.js';
 import { TaskService } from './services/task-service.js';
 import { ExecutionService } from './services/execution-service.js';
 import { ProviderRegistry } from '@rixed-devos/providers';
+import { SecretRedactor } from '@rixed-devos/workspaces';
 
 export interface DevOsServerInstance {
   app: express.Express;
@@ -38,12 +39,18 @@ export function createDevOsServer(options: {
   // Load roles on startup
   roleService.loadRoles().catch(err => console.error('Failed to load roles:', err));
 
-  // Health
+  // Health & System Info
   app.get('/api/health', (req: Request, res: Response) => {
     res.json({
       status: 'ok',
-      version: '1.0.0',
-      primaryModel: 'Gemini 3.8 Flash (High)',
+      version: '0.1.0-alpha.1',
+      brand: 'RixMesh',
+      defaultModel: 'gemini-3.8-flash',
+      security: {
+        localhostOnly: true,
+        secretRedaction: true,
+        symlinkCheck: true,
+      },
       timestamp: new Date().toISOString(),
     });
   });
@@ -58,7 +65,7 @@ export function createDevOsServer(options: {
       const project = await projectService.registerProject(req.body);
       res.status(201).json(project);
     } catch (err: any) {
-      res.status(400).json({ error: err.message });
+      res.status(400).json({ error: SecretRedactor.redact(err.message) });
     }
   });
 
@@ -86,7 +93,7 @@ export function createDevOsServer(options: {
       });
       res.status(201).json(task);
     } catch (err: any) {
-      res.status(400).json({ error: err.message });
+      res.status(400).json({ error: SecretRedactor.redact(err.message) });
     }
   });
 
@@ -104,7 +111,17 @@ export function createDevOsServer(options: {
       const run = await executionService.executeTask(id, providerId);
       res.status(202).json(run);
     } catch (err: any) {
-      res.status(400).json({ error: err.message });
+      res.status(400).json({ error: SecretRedactor.redact(err.message) });
+    }
+  });
+
+  app.post('/api/tasks/:id/cancel', async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    try {
+      await executionService.cancelTask(id);
+      res.json({ success: true, taskId: id, status: 'CANCELLED' });
+    } catch (err: any) {
+      res.status(400).json({ error: SecretRedactor.redact(err.message) });
     }
   });
 
@@ -114,8 +131,38 @@ export function createDevOsServer(options: {
       const result = await executionService.mergeTask(id);
       res.json(result);
     } catch (err: any) {
-      res.status(400).json({ error: err.message });
+      res.status(400).json({ error: SecretRedactor.redact(err.message) });
     }
+  });
+
+  app.get('/api/tasks/:id/reviews', (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    const reviews = db.getRawDb().prepare(`
+      SELECT * FROM reviews WHERE task_id = ? ORDER BY created_at DESC
+    `).all(id);
+    res.json(reviews);
+  });
+
+  // Approvals
+  app.get('/api/approvals', (req: Request, res: Response) => {
+    const approvals = db.getRawDb().prepare(`
+      SELECT * FROM approvals ORDER BY requested_at DESC
+    `).all();
+    res.json(approvals);
+  });
+
+  app.post('/api/approvals/:id/decide', (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    const { decision } = req.body; // 'approved' | 'rejected'
+    if (decision !== 'approved' && decision !== 'rejected') {
+      return res.status(400).json({ error: "decision must be 'approved' or 'rejected'" });
+    }
+
+    db.getRawDb().prepare(`
+      UPDATE approvals SET status = ?, decided_at = ?, decided_by = 'user' WHERE id = ?
+    `).run(decision, new Date().toISOString(), id);
+
+    res.json({ id, status: decision });
   });
 
   // Roles

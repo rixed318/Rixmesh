@@ -20,6 +20,7 @@ export class CodexProvider implements CodingAgentAdapter {
       const { stdout } = await execFileAsync('codex', ['--version']);
       return {
         available: true,
+        status: 'implemented',
         reason: `Found local installation: ${stdout.trim()}`,
         capabilities: ['cli-exec', 'code-generation', 'tools:fs'],
         models: ['codex-latest', 'gpt-5-codex'],
@@ -27,9 +28,10 @@ export class CodexProvider implements CodingAgentAdapter {
     } catch {
       return {
         available: false,
+        status: 'unavailable',
         reason: 'codex executable not found in PATH',
-        capabilities: [],
-        models: [],
+        capabilities: ['cli-exec'],
+        models: ['codex-latest'],
       };
     }
   }

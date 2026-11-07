@@ -4,6 +4,10 @@ import {
   AgentSessionInput,
   AgentEvent,
 } from './adapter-interface.js';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execFileAsync = promisify(execFile);
 
 export class OpenCodeProvider implements CodingAgentAdapter {
   public readonly id = 'opencode';
@@ -12,12 +16,24 @@ export class OpenCodeProvider implements CodingAgentAdapter {
   private sessions = new Map<string, { id: string; input: AgentSessionInput; cancelled: boolean }>();
 
   public async probe(): Promise<ProviderProbeResult> {
-    return {
-      available: true,
-      reason: 'OpenCode adapter ready for integration',
-      capabilities: ['acp', 'streaming', 'multi-provider', 'tools:fs'],
-      models: ['opencode-default', 'deepseek-coder', 'qwen-coder'],
-    };
+    try {
+      const { stdout } = await execFileAsync('opencode', ['--version']);
+      return {
+        available: true,
+        status: 'implemented',
+        reason: `Found local installation: ${stdout.trim()}`,
+        capabilities: ['acp', 'streaming', 'multi-provider', 'tools:fs'],
+        models: ['opencode-default', 'deepseek-coder', 'qwen-coder'],
+      };
+    } catch {
+      return {
+        available: false,
+        status: 'unavailable',
+        reason: 'opencode binary not found in PATH. Install via https://github.com/anomalyco/opencode',
+        capabilities: ['acp', 'streaming'],
+        models: ['opencode-default'],
+      };
+    }
   }
 
   public async startSession(input: AgentSessionInput): Promise<{ sessionId: string }> {

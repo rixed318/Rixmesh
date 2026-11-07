@@ -1,7 +1,15 @@
 import { AgentRole, Task } from '@rixed-devos/domain';
 
+export type ProviderStatus =
+  | 'implemented'
+  | 'tested-live'
+  | 'tested-mock'
+  | 'experimental'
+  | 'unavailable';
+
 export interface ProviderProbeResult {
   available: boolean;
+  status: ProviderStatus;
   reason?: string;
   capabilities: string[];
   models: string[];
