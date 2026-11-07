@@ -1,0 +1,98 @@
+name: Multi-Platform Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    name: Build & Package Release (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: rixed-devos-linux-x64.tar.gz
+          - os: windows-latest
+            artifact_name: rixed-devos-windows-x64.zip
+          - os: macos-latest
+            artifact_name: rixed-devos-darwin-arm64.tar.gz
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.29.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build All Monorepo Packages
+        run: pnpm build
+
+      - name: Package Release (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p release-pkg
+          cp -r apps/server/dist release-pkg/server-dist
+          cp -r apps/web/dist release-pkg/web-dist
+          cp -r roles release-pkg/roles
+          cp -r workflows release-pkg/workflows
+          cp README.md LICENSE package.json release-pkg/
+          tar -czvf ${{ matrix.artifact_name }} -C release-pkg .
+
+      - name: Package Release (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path release-pkg
+          Copy-Item -Recurse apps\server\dist release-pkg\server-dist
+          Copy-Item -Recurse apps\web\dist release-pkg\web-dist
+          Copy-Item -Recurse roles release-pkg\roles
+          Copy-Item -Recurse workflows release-pkg\workflows
+          Copy-Item README.md, LICENSE, package.json release-pkg\
+          Compress-Archive -Path release-pkg\* -DestinationPath ${{ matrix.artifact_name }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all built artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Rixed DevOS ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: release-assets/*
