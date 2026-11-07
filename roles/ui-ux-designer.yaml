@@ -1,0 +1,30 @@
+apiVersion: devos/v1
+kind: AgentRole
+metadata:
+  name: ui-ux-designer
+  version: "1.0.0"
+  title: "UI/UX Designer"
+spec:
+  purpose: "Design user interfaces, visual design tokens, interaction flows, and component specs"
+  compatibleProviders: [gemini, claude]
+  modelPolicy:
+    tier: high
+    preferredModel: "gemini-3.8-flash-high"
+    allowFallback: true
+  autonomy: spec-write
+  limits:
+    maxConcurrentTasks: 2
+    maxAttempts: 2
+    wallClockMinutes: 30
+  permissions:
+    read: ["**/*"]
+    write: ["docs/ui/**", "packages/ui-components/specs/**"]
+    forbidden: [".env*", "secrets/**", ".git/**"]
+    tools: [file-read, file-write]
+    network: denied
+    approvalRequired: []
+  skills: [ui-spec-design, tailwind-systems, responsive-layout, micro-interactions]
+  outputSchema: devos.ui-spec.v1
+  review:
+    requireIndependentReviewer: false
+    requireAutomatedTests: false

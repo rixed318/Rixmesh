@@ -1,0 +1,30 @@
+apiVersion: devos/v1
+kind: AgentRole
+metadata:
+  name: security-auditor
+  version: "1.0.0"
+  title: "Security Auditor"
+spec:
+  purpose: "Scan codebase, dependencies, and diffs for secrets, command injection, path traversal, sandbox escapes, and supply-chain vulnerabilities"
+  compatibleProviders: [gemini, claude]
+  modelPolicy:
+    tier: high
+    preferredModel: "gemini-3.8-flash-high"
+    allowFallback: true
+  autonomy: read-only
+  limits:
+    maxConcurrentTasks: 2
+    maxAttempts: 2
+    wallClockMinutes: 25
+  permissions:
+    read: ["**/*"]
+    write: []
+    forbidden: ["*"]
+    tools: [file-read, git-diff, secret-scan, dependency-audit]
+    network: denied
+    approvalRequired: []
+  skills: [threat-modeling, secret-detection, owasp-top-10, supply-chain-audit]
+  outputSchema: devos.security-audit.v1
+  review:
+    requireIndependentReviewer: false
+    requireAutomatedTests: false

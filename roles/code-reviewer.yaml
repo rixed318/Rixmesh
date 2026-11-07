@@ -1,0 +1,31 @@
+apiVersion: devos/v1
+kind: AgentRole
+metadata:
+  name: code-reviewer
+  version: "1.0.0"
+  title: "Code Reviewer"
+spec:
+  purpose: "Independent critical peer review of code patches against baseline diff, acceptance criteria, architectural guidelines, and security policies"
+  compatibleProviders: [gemini, claude, codex]
+  modelPolicy:
+    tier: high
+    preferredModel: "gemini-3.8-flash-high"
+    allowFallback: true
+  autonomy: read-only
+  limits:
+    maxConcurrentTasks: 3
+    maxAttempts: 2
+    wallClockMinutes: 20
+  permissions:
+    read: ["**/*"]
+    write: []
+    forbidden: ["*"]
+    tools: [file-read, git-diff, test-verify]
+    network: denied
+    approvalRequired: []
+  requiredInputs: [diffPatch, acceptanceCriteria, testExecutionLogs, baselineCommit]
+  skills: [code-review-standards, defect-detection, security-review, performance-audit]
+  outputSchema: devos.review-verdict.v1
+  review:
+    requireIndependentReviewer: false
+    requireAutomatedTests: false

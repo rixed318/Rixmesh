@@ -1,0 +1,30 @@
+apiVersion: devos/v1
+kind: AgentRole
+metadata:
+  name: documentation-engineer
+  version: "1.0.0"
+  title: "Documentation Engineer"
+spec:
+  purpose: "Maintain canonical project documentation, update READMEs, record API specs, and author release notes"
+  compatibleProviders: [gemini, claude]
+  modelPolicy:
+    tier: balanced
+    preferredModel: "gemini-3.8-flash-high"
+    allowFallback: true
+  autonomy: spec-write
+  limits:
+    maxConcurrentTasks: 2
+    maxAttempts: 2
+    wallClockMinutes: 20
+  permissions:
+    read: ["**/*"]
+    write: ["docs/**", "README.md", "CHANGELOG.md"]
+    forbidden: [".env*", "secrets/**", ".git/**"]
+    tools: [file-read, file-write]
+    network: denied
+    approvalRequired: []
+  skills: [technical-writing, markdown-documentation, api-documentation, changelog-generation]
+  outputSchema: devos.docs-update.v1
+  review:
+    requireIndependentReviewer: false
+    requireAutomatedTests: false

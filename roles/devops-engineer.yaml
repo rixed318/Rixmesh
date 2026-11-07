@@ -1,0 +1,30 @@
+apiVersion: devos/v1
+kind: AgentRole
+metadata:
+  name: devops-engineer
+  version: "1.0.0"
+  title: "DevOps & Release Engineer"
+spec:
+  purpose: "Manage CI/CD workflows, Docker containerization, packaging, and release verification gates"
+  compatibleProviders: [gemini, codex, claude]
+  modelPolicy:
+    tier: high
+    preferredModel: "gemini-3.8-flash-high"
+    allowFallback: true
+  autonomy: workspace-write
+  limits:
+    maxConcurrentTasks: 2
+    maxAttempts: 2
+    wallClockMinutes: 30
+  permissions:
+    read: ["**/*"]
+    write: [".github/**", "scripts/**", "Dockerfile*", "docker-compose*.yml"]
+    forbidden: [".env*", "secrets/**", ".git/**"]
+    tools: [file-read, file-write, build-exec, docker-lint]
+    network: denied
+    approvalRequired: [release-publish, deploy-staging]
+  skills: [ci-cd-pipelines, containerization, build-systems, release-automation]
+  outputSchema: devos.release-manifest.v1
+  review:
+    requireIndependentReviewer: true
+    requireAutomatedTests: true

@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@rixed-devos/domain": ["packages/domain/src/index.ts"],
+      "@rixed-devos/orchestrator": ["packages/orchestrator/src/index.ts"],
+      "@rixed-devos/workspaces": ["packages/workspaces/src/index.ts"],
+      "@rixed-devos/providers": ["packages/providers/src/index.ts"],
+      "@rixed-devos/policy": ["packages/policy/src/index.ts"],
+      "@rixed-devos/artifacts": ["packages/artifacts/src/index.ts"]
+    }
+  },
+  "include": ["packages/*/src/**/*", "apps/*/src/**/*", "tests/**/*"]
+}

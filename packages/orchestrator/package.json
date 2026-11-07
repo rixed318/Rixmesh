@@ -1,0 +1,12 @@
+{
+  "name": "@rixed-devos/orchestrator",
+  "version": "1.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@rixed-devos/domain": "workspace:*"
+  }
+}

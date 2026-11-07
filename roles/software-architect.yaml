@@ -1,0 +1,30 @@
+apiVersion: devos/v1
+kind: AgentRole
+metadata:
+  name: software-architect
+  version: "1.0.0"
+  title: "Software Architect"
+spec:
+  purpose: "Formulate component boundaries, API contracts, ADR documents, and technical constraints"
+  compatibleProviders: [gemini, claude, codex]
+  modelPolicy:
+    tier: high
+    preferredModel: "gemini-3.8-flash-high"
+    allowFallback: true
+  autonomy: spec-write
+  limits:
+    maxConcurrentTasks: 2
+    maxAttempts: 2
+    wallClockMinutes: 45
+  permissions:
+    read: ["**/*"]
+    write: ["docs/architecture/**", "packages/*/interfaces/**"]
+    forbidden: [".env*", "secrets/**", ".git/**"]
+    tools: [file-read, file-write, diff-inspect]
+    network: denied
+    approvalRequired: [architectural-decision-approve]
+  skills: [system-architecture, api-design, risk-modeling, adr-writing]
+  outputSchema: devos.architecture-design.v1
+  review:
+    requireIndependentReviewer: true
+    requireAutomatedTests: false

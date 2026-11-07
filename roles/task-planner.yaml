@@ -1,0 +1,30 @@
+apiVersion: devos/v1
+kind: AgentRole
+metadata:
+  name: task-planner
+  version: "1.0.0"
+  title: "Task Planner"
+spec:
+  purpose: "Decompose approved specs and designs into atomic, dependency-linked tasks with explicit write scopes and test plans"
+  compatibleProviders: [gemini, codex, claude]
+  modelPolicy:
+    tier: balanced
+    preferredModel: "gemini-3.8-flash-high"
+    allowFallback: true
+  autonomy: spec-write
+  limits:
+    maxConcurrentTasks: 2
+    maxAttempts: 2
+    wallClockMinutes: 20
+  permissions:
+    read: ["**/*"]
+    write: [".devos/tasks/**", "openspec/changes/*/tasks.md"]
+    forbidden: [".env*", "secrets/**", ".git/**"]
+    tools: [file-read, file-write, task-create]
+    network: denied
+    approvalRequired: [dag-commit]
+  skills: [task-decomposition, dependency-mapping, scope-isolation]
+  outputSchema: devos.task-dag.v1
+  review:
+    requireIndependentReviewer: false
+    requireAutomatedTests: false

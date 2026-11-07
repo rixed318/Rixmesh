@@ -1,0 +1,32 @@
+apiVersion: devos/v1
+kind: AgentRole
+metadata:
+  name: backend-developer
+  version: "1.0.0"
+  title: "Backend Developer"
+spec:
+  purpose: "Implement backend logic, database persistence, REST and WebSocket RPC endpoints, and server tests"
+  compatibleProviders: [gemini, codex, claude, opencode]
+  modelPolicy:
+    tier: high
+    preferredModel: "gemini-3.8-flash-high"
+    allowFallback: true
+  autonomy: workspace-write
+  limits:
+    maxConcurrentTasks: 2
+    maxAttempts: 3
+    wallClockMinutes: 45
+    estimatedBudgetUsd: 3.00
+  permissions:
+    read: ["**/*"]
+    write: ["apps/server/**", "packages/domain/**", "packages/orchestrator/**", "packages/workspaces/**", "packages/providers/**", "packages/policy/**", "tests/backend/**"]
+    forbidden: [".env*", "secrets/**", ".git/**"]
+    tools: [file-read, file-write, test-run, git-status, git-diff]
+    network: denied
+    approvalRequired: [git-push, git-merge, db-migration-prod]
+  requiredInputs: [ticket, acceptanceCriteria, approvedDesign, baselineCommit]
+  skills: [node-engineering, sqlite-wal, api-contract-design, tdd]
+  outputSchema: devos.task-result.v1
+  review:
+    requireIndependentReviewer: true
+    requireAutomatedTests: true

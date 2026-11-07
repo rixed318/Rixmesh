@@ -1,0 +1,16 @@
+{
+  "name": "@rixed-devos/workspaces",
+  "version": "1.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@rixed-devos/domain": "workspace:*",
+    "picomatch": "^4.0.2"
+  },
+  "devDependencies": {
+    "@types/picomatch": "^3.0.1"
+  }
+}

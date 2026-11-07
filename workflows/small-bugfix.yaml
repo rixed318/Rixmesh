@@ -1,0 +1,30 @@
+apiVersion: devos/v1
+kind: WorkflowDefinition
+metadata:
+  name: small-bugfix
+  description: "Lightweight triage -> implement -> verify -> independent review -> merge"
+spec:
+  stages:
+    - id: stage-planning
+      role: task-planner
+      tasks:
+        - title: "Isolate root cause and specify bugfix criteria"
+          writeScope: [".devos/tasks/**"]
+    - id: stage-implementation
+      role: backend-developer # or frontend-developer
+      dependsOn: [stage-planning]
+      tasks:
+        - title: "Implement fix and regression unit test"
+          writeScope: ["apps/**", "packages/**", "tests/**"]
+    - id: stage-review
+      role: code-reviewer
+      dependsOn: [stage-implementation]
+      tasks:
+        - title: "Independent diff review and test verification"
+          writeScope: []
+    - id: stage-merge
+      role: orchestrator
+      dependsOn: [stage-review]
+      requiresApproval: true
+      tasks:
+        - title: "Controlled fast-forward merge into base branch"

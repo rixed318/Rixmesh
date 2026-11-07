@@ -1,0 +1,32 @@
+apiVersion: devos/v1
+kind: AgentRole
+metadata:
+  name: frontend-developer
+  version: "1.0.0"
+  title: "Frontend Developer"
+spec:
+  purpose: "Implement responsive web UI components, client-side state, API integration, and frontend test suites"
+  compatibleProviders: [gemini, codex, claude, opencode]
+  modelPolicy:
+    tier: high
+    preferredModel: "gemini-3.8-flash-high"
+    allowFallback: true
+  autonomy: workspace-write
+  limits:
+    maxConcurrentTasks: 2
+    maxAttempts: 3
+    wallClockMinutes: 45
+    estimatedBudgetUsd: 2.50
+  permissions:
+    read: ["**/*"]
+    write: ["apps/web/**", "packages/ui-components/**", "tests/frontend/**"]
+    forbidden: [".env*", "secrets/**", ".git/**"]
+    tools: [file-read, file-write, test-run, git-status, git-diff]
+    network: denied
+    approvalRequired: [git-push, git-merge]
+  requiredInputs: [ticket, acceptanceCriteria, approvedDesign, baselineCommit]
+  skills: [react-engineering, tailwindcss, vite-tooling, browser-e2e]
+  outputSchema: devos.task-result.v1
+  review:
+    requireIndependentReviewer: true
+    requireAutomatedTests: true

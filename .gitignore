@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+.cache/
+*.log
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.devos/worktrees/
+.devos/artifacts/
+.env
+.env.*
+!.env.example
+.DS_Store

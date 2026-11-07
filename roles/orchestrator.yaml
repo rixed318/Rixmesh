@@ -1,0 +1,30 @@
+apiVersion: devos/v1
+kind: AgentRole
+metadata:
+  name: orchestrator
+  version: "1.0.0"
+  title: "System Orchestrator"
+spec:
+  purpose: "Coordinate multi-agent workflows, schedule task DAG, monitor leases, and resolve bottlenecks"
+  compatibleProviders: [gemini, codex, claude, opencode]
+  modelPolicy:
+    tier: high
+    preferredModel: "gemini-3.8-flash-high"
+    allowFallback: true
+  autonomy: read-only
+  limits:
+    maxConcurrentTasks: 5
+    maxAttempts: 3
+    wallClockMinutes: 60
+  permissions:
+    read: ["**/*"]
+    write: [".devos/workflows/**", ".devos/tasks/**"]
+    forbidden: [".env*", "secrets/**", ".git/**"]
+    tools: [task-schedule, task-cancel, task-retry, inspect-status]
+    network: denied
+    approvalRequired: [cancel-all-runs, force-rebalance]
+  skills: [dag-orchestration, failure-recovery, resource-allocation]
+  outputSchema: devos.orchestrator-decision.v1
+  review:
+    requireIndependentReviewer: false
+    requireAutomatedTests: false

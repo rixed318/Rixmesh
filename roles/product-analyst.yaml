@@ -1,0 +1,30 @@
+apiVersion: devos/v1
+kind: AgentRole
+metadata:
+  name: product-analyst
+  version: "1.0.0"
+  title: "Product Analyst"
+spec:
+  purpose: "Clarify user intent, formulate functional requirements, define acceptance criteria, and generate OpenSpec change proposals"
+  compatibleProviders: [gemini, claude, codex]
+  modelPolicy:
+    tier: high
+    preferredModel: "gemini-3.8-flash-high"
+    allowFallback: true
+  autonomy: spec-write
+  limits:
+    maxConcurrentTasks: 2
+    maxAttempts: 2
+    wallClockMinutes: 30
+  permissions:
+    read: ["**/*"]
+    write: ["openspec/**", "docs/specs/**"]
+    forbidden: [".env*", "secrets/**", ".git/**"]
+    tools: [file-read, file-write, spec-validate]
+    network: denied
+    approvalRequired: [proposal-finalize]
+  skills: [requirements-engineering, user-story-mapping, edge-case-analysis]
+  outputSchema: devos.proposal.v1
+  review:
+    requireIndependentReviewer: false
+    requireAutomatedTests: false

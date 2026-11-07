@@ -1,0 +1,60 @@
+apiVersion: devos/v1
+kind: WorkflowDefinition
+metadata:
+  name: feature-development
+  description: "Full lifecycle: Analyst -> Architect -> Planner -> Parallel Dev (FE & BE) -> QA -> Reviewer -> Docs -> Merge"
+spec:
+  stages:
+    - id: stage-analyst
+      role: product-analyst
+      tasks:
+        - title: "Create OpenSpec proposal and acceptance criteria"
+          writeScope: ["openspec/**"]
+    - id: stage-architect
+      role: software-architect
+      dependsOn: [stage-analyst]
+      tasks:
+        - title: "Author Architecture Decision Record and component interfaces"
+          writeScope: ["docs/architecture/**"]
+    - id: stage-planner
+      role: task-planner
+      dependsOn: [stage-architect]
+      tasks:
+        - title: "Generate parallel Task DAG and dependency graph"
+          writeScope: [".devos/tasks/**"]
+    - id: stage-backend
+      role: backend-developer
+      dependsOn: [stage-planner]
+      tasks:
+        - title: "Implement API endpoints and data persistence"
+          writeScope: ["apps/server/**", "packages/**"]
+    - id: stage-frontend
+      role: frontend-developer
+      dependsOn: [stage-planner]
+      tasks:
+        - title: "Implement UI components and client view"
+          writeScope: ["apps/web/**"]
+    - id: stage-qa
+      role: qa-engineer
+      dependsOn: [stage-backend, stage-frontend]
+      tasks:
+        - title: "Run end-to-end integration and boundary tests"
+          writeScope: ["tests/**"]
+    - id: stage-review
+      role: code-reviewer
+      dependsOn: [stage-qa]
+      tasks:
+        - title: "Perform independent peer review of unified diff"
+          writeScope: []
+    - id: stage-docs
+      role: documentation-engineer
+      dependsOn: [stage-review]
+      tasks:
+        - title: "Update README and API documentation"
+          writeScope: ["docs/**", "README.md"]
+    - id: stage-merge
+      role: orchestrator
+      dependsOn: [stage-docs]
+      requiresApproval: true
+      tasks:
+        - title: "Final human approval and integration merge"

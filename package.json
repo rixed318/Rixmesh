@@ -1,0 +1,24 @@
+{
+  "name": "rixed-devos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local-first Multi-Agent Software Engineering Operating System & Control Plane",
+  "author": "rixed318",
+  "license": "MIT",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @rixed-devos/server --filter @rixed-devos/web dev",
+    "dev:server": "pnpm --filter @rixed-devos/server dev",
+    "dev:web": "pnpm --filter @rixed-devos/web dev",
+    "build": "pnpm -r build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "tsx tests/e2e/e2e-runner.ts",
+    "typecheck": "tsc --build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.4"
+  }
+}

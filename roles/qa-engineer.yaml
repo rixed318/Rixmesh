@@ -1,0 +1,30 @@
+apiVersion: devos/v1
+kind: AgentRole
+metadata:
+  name: qa-engineer
+  version: "1.0.0"
+  title: "QA Engineer"
+spec:
+  purpose: "Formulate and execute unit, integration, and E2E test suites; verify acceptance criteria against actual test execution"
+  compatibleProviders: [gemini, codex, claude]
+  modelPolicy:
+    tier: balanced
+    preferredModel: "gemini-3.8-flash-high"
+    allowFallback: true
+  autonomy: test-write
+  limits:
+    maxConcurrentTasks: 2
+    maxAttempts: 2
+    wallClockMinutes: 30
+  permissions:
+    read: ["**/*"]
+    write: ["tests/**", "fixtures/**", "artifacts/*/test-report.json"]
+    forbidden: [".env*", "secrets/**", ".git/**"]
+    tools: [file-read, file-write, test-run, playwright-exec]
+    network: denied
+    approvalRequired: []
+  skills: [vitest, e2e-testing, boundary-analysis, regression-validation]
+  outputSchema: devos.qa-report.v1
+  review:
+    requireIndependentReviewer: false
+    requireAutomatedTests: true
