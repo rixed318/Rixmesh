@@ -1,11 +1,16 @@
 {
-  "name": "rixed-devos",
-  "version": "1.0.0",
+  "name": "rixmesh",
+  "version": "0.1.0-alpha.1",
   "private": true,
+  "type": "module",
   "description": "Local-first Multi-Agent Software Engineering Operating System & Control Plane",
   "author": "rixed318",
   "license": "MIT",
+  "bin": {
+    "rixmesh": "./bin/rixmesh.js"
+  },
   "scripts": {
+    "start": "node bin/rixmesh.js start",
     "dev": "pnpm --parallel --filter @rixed-devos/server --filter @rixed-devos/web dev",
     "dev:server": "pnpm --filter @rixed-devos/server dev",
     "dev:web": "pnpm --filter @rixed-devos/web dev",

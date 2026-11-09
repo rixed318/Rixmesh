@@ -37,8 +37,10 @@ const { app } = createDevOsServer({
 
 app.listen(PORT, HOST, () => {
   console.log(`\n=========================================================`);
-  console.log(`  🚀 RixMesh Control Plane running on http://${HOST}:${PORT}`);
-  console.log(`  🧠 Default Model Engine: Gemini 3.8 Flash (High)`);
+  console.log(`  🚀 RixMesh Studio & Control Plane Active`);
+  console.log(`  🌐 Web UI (Unified App): http://${HOST}:${PORT}`);
+  console.log(`  ⚡ Live Vite Dev UI:    http://localhost:3100`);
+  console.log(`  🧠 Default Model Engine: Gemini 3.8 Flash (High) via agy CLI`);
   console.log(`  🔒 Security: Bound to ${HOST} (Localhost only)`);
   console.log(`  📂 Database: ${DB_PATH}`);
   console.log(`  👥 Roles Directory: ${ROLES_DIR}`);

@@ -289,12 +289,32 @@ export function createDevOsServer(options: {
     });
   });
 
-  // Serve compiled web UI if available
-  const webDist = path.resolve(process.cwd(), 'apps', 'web', 'dist');
-  if (fs.existsSync(webDist)) {
+  // Serve compiled web UI if available, or redirect to dev UI
+  const resolveWebDist = (): string | null => {
+    const candidates = [
+      path.resolve(process.cwd(), 'apps', 'web', 'dist'),
+      path.resolve(process.cwd(), '..', 'web', 'dist'),
+      path.resolve(process.cwd(), '../../apps/web/dist'),
+    ];
+    for (const c of candidates) {
+      if (fs.existsSync(path.join(c, 'index.html'))) {
+        return c;
+      }
+    }
+    return null;
+  };
+
+  const webDist = resolveWebDist();
+  if (webDist) {
     app.use(express.static(webDist));
-    app.get('*', (req: Request, res: Response) => {
+    app.get('*', (req: Request, res: Response, next) => {
+      if (req.path.startsWith('/api/')) return next();
       res.sendFile(path.join(webDist, 'index.html'));
+    });
+  } else {
+    // If web distribution has not been built yet, redirect root browser requests to Vite dev port
+    app.get('/', (req: Request, res: Response) => {
+      res.redirect('http://localhost:3100');
     });
   }
 
