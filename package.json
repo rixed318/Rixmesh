@@ -11,6 +11,7 @@
   },
   "scripts": {
     "start": "node bin/rixmesh.js",
+    "desktop": "pnpm --filter @rixmesh/desktop start",
     "status": "node bin/rixmesh.js status",
     "dev": "pnpm --parallel --filter @rixed-devos/server --filter @rixed-devos/web dev",
     "dev:server": "pnpm --filter @rixed-devos/server dev",

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cpu, GitBranch, Layers, Plus, Terminal, RefreshCw } from 'lucide-react';
+import { Cpu, GitBranch, Layers, Plus, Terminal, RefreshCw, FolderPlus } from 'lucide-react';
 
 interface HeaderProps {
   currentProject: any;
@@ -8,6 +8,7 @@ interface HeaderProps {
   activeTab: 'kanban' | 'dag' | 'agents' | 'providers' | 'code';
   onTabChange: (tab: 'kanban' | 'dag' | 'agents' | 'providers' | 'code') => void;
   onNewTask: () => void;
+  onNewProject?: () => void;
   onRefresh: () => void;
 }
 
@@ -18,6 +19,7 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   onTabChange,
   onNewTask,
+  onNewProject,
   onRefresh,
 }) => {
   return (
@@ -42,19 +44,31 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Project Selector */}
-        <div className="flex items-center bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-1.5 text-sm">
-          <GitBranch className="w-4 h-4 text-gray-400 mr-2" />
-          <select
-            value={currentProject?.id || ''}
-            onChange={(e) => onSelectProject(e.target.value)}
-            className="bg-transparent text-gray-200 outline-none text-sm cursor-pointer pr-2"
-          >
-            {projects.map((p) => (
-              <option key={p.id} value={p.id} className="bg-[#161b22] text-gray-200">
-                {p.name} ({p.defaultBranch})
-              </option>
-            ))}
-          </select>
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-1.5 text-sm">
+            <GitBranch className="w-4 h-4 text-gray-400 mr-2" />
+            <select
+              value={currentProject?.id || ''}
+              onChange={(e) => onSelectProject(e.target.value)}
+              className="bg-transparent text-gray-200 outline-none text-sm cursor-pointer pr-2"
+            >
+              {projects.length === 0 && <option value="">No projects registered</option>}
+              {projects.map((p) => (
+                <option key={p.id} value={p.id} className="bg-[#161b22] text-gray-200">
+                  {p.name} ({p.defaultBranch})
+                </option>
+              ))}
+            </select>
+          </div>
+          {onNewProject && (
+            <button
+              onClick={onNewProject}
+              className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-[#21262d] border border-[#30363d] transition"
+              title="Open Git Repository"
+            >
+              <FolderPlus className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Navigation Tabs */}

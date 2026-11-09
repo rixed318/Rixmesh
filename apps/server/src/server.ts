@@ -75,6 +75,43 @@ export function createDevOsServer(options: {
   // Load roles on startup
   roleService.loadRoles().catch(err => console.error('Failed to load roles:', err));
 
+  // Auto-register current Git repository if database is empty
+  setTimeout(async () => {
+    try {
+      const existing = projectService.listProjects();
+      if (existing.length === 0) {
+        let repoRoot = process.cwd();
+        for (let i = 0; i < 4; i++) {
+          if (fs.existsSync(path.join(repoRoot, '.git'))) break;
+          const parent = path.dirname(repoRoot);
+          if (parent === repoRoot) break;
+          repoRoot = parent;
+        }
+        if (fs.existsSync(path.join(repoRoot, '.git'))) {
+          const registered = await projectService.registerProject({
+            name: 'RixMesh Monorepo',
+            rootPath: repoRoot,
+            stack: 'typescript',
+          });
+          console.log(`[RixMesh] Auto-registered active workspace: ${registered.name} (${registered.rootPath})`);
+
+          // Seed default sample task for instant interactive testing
+          taskService.createTask({
+            projectId: registered.id,
+            title: 'Verify Gemini 3.8 Flash High Integration',
+            description: 'Run automated diagnostics across provider runtime and check local agy CLI health.',
+            specPath: 'apps/server/src/server.ts',
+            assigneeRoleId: 'backend-developer',
+            priority: 'high',
+            writeScope: ['apps/server/**'],
+          });
+        }
+      }
+    } catch (err: any) {
+      console.warn('[RixMesh] Auto-registration notice:', err.message);
+    }
+  }, 200);
+
   // Health & System Info
   app.get('/api/health', (req: Request, res: Response) => {
     res.json({

@@ -256,3 +256,4 @@ Before building RixMesh, an exhaustive comparative spike evaluated existing open
 | **Path Traversal / `realpath` Defense** | Basic | None | Basic | None | **Exhaustive canonicalization** |
 
 See [docs/research/foundation-comparison.md](../research/foundation-comparison.md) for complete benchmark details and license notices.
+

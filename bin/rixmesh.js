@@ -98,6 +98,25 @@ async function runStart() {
   process.on('SIGTERM', cleanup);
 }
 
+async function runDesktop() {
+  printBanner();
+  console.log('\x1b[32m✔ Launching RixMesh Studio Native Desktop Application...\x1b[0m\n');
+
+  const webDist = path.join(ROOT_DIR, 'apps', 'web', 'dist');
+  if (!fs.existsSync(webDist)) {
+    console.log('\x1b[33m⚡ Web assets not found. Compiling workspace...\x1b[0m');
+    execSync('pnpm build', { cwd: ROOT_DIR, stdio: 'inherit' });
+  }
+
+  const child = spawn('pnpm', ['--filter', '@rixmesh/desktop', 'start'], {
+    cwd: ROOT_DIR,
+    stdio: 'inherit',
+  });
+
+  process.on('SIGINT', () => child.kill('SIGINT'));
+  process.on('SIGTERM', () => child.kill('SIGTERM'));
+}
+
 async function runDev() {
   printBanner();
   console.log('\x1b[32m✔ Launching RixMesh in Development Mode (Vite Hot-Reload + Server Watch)...\x1b[0m\n');
@@ -161,6 +180,7 @@ function printHelp() {
 
 Commands:
   start          Start unified server and open RixMesh Studio in application mode (Default)
+  desktop        Launch RixMesh Studio as a native Electron desktop application
   dev            Start development mode with Vite hot-reloading (port 3100) and server watch (port 4100)
   status         Inspect configured LLM providers, database connection, and runtime health
   test           Run all 33 unit and acceptance tests (AT-01 to AT-18)
@@ -181,6 +201,9 @@ Examples:
 switch (command) {
   case 'start':
     runStart();
+    break;
+  case 'desktop':
+    runDesktop();
     break;
   case 'dev':
     runDev();

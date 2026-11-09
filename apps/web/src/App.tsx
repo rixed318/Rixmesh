@@ -7,6 +7,7 @@ import { ProvidersTab } from './components/ProvidersTab';
 import { TaskDetailModal } from './components/TaskDetailModal';
 import { NewTaskModal } from './components/NewTaskModal';
 import { CodeEditorTab } from './components/CodeEditorTab';
+import { NewProjectModal } from './components/NewProjectModal';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'kanban' | 'dag' | 'agents' | 'providers' | 'code'>('kanban');
@@ -18,6 +19,7 @@ export default function App() {
   const [providers, setProviders] = useState<Record<string, any>>({});
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
+  const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
   const [events, setEvents] = useState<any[]>([]);
 
   // Fetch initial metadata
@@ -129,6 +131,35 @@ export default function App() {
     }
   };
 
+  const handleCreateProject = async (projectData: any) => {
+    try {
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(projectData),
+      });
+      const data = await res.json();
+      if (data.id) {
+        setProjects((prev) => [...prev, data]);
+        setCurrentProject(data);
+        fetchData();
+      } else if (data.error) {
+        alert(`Could not open project: ${data.error}`);
+      }
+    } catch (err) {
+      console.error('Failed to create project:', err);
+    }
+  };
+
+  useEffect(() => {
+    if ((window as any).rixmeshDesktop) {
+      (window as any).rixmeshDesktop.onSelectedProjectPath((folderPath: string) => {
+        const name = folderPath.split('/').pop() || 'Workspace';
+        handleCreateProject({ name, rootPath: folderPath, stack: 'typescript' });
+      });
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#0d1117] text-gray-100 flex flex-col font-sans">
       <Header
@@ -141,6 +172,7 @@ export default function App() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onNewTask={() => setIsNewTaskOpen(true)}
+        onNewProject={() => setIsNewProjectOpen(true)}
         onRefresh={fetchData}
       />
 
@@ -187,6 +219,15 @@ export default function App() {
           existingTasks={tasks}
           onClose={() => setIsNewTaskOpen(false)}
           onCreateTask={handleCreateTask}
+        />
+      )}
+
+      {/* New Project Modal */}
+      {isNewProjectOpen && (
+        <NewProjectModal
+          isOpen={isNewProjectOpen}
+          onClose={() => setIsNewProjectOpen(false)}
+          onCreateProject={handleCreateProject}
         />
       )}
     </div>

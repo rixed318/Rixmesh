@@ -213,3 +213,4 @@ To add a new LLM provider:
 ### Q: Git worktree lock or "fatal: 'devos/TASK-xxx' already exists"
 **Cause:** An aborted process left an unpruned Git worktree or branch.  
 **Resolution:** Run `git worktree prune` in the target repository, or delete the stale branch: `git branch -D devos/TASK-xxx`.
+
