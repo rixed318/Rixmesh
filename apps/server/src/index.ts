@@ -35,7 +35,7 @@ const { app } = createDevOsServer({
   baseDataDir: BASE_DATA_DIR,
 });
 
-app.listen(PORT, HOST, () => {
+const server = app.listen(PORT, HOST, () => {
   console.log(`\n=========================================================`);
   console.log(`  🚀 RixMesh Studio & Control Plane Active`);
   console.log(`  🌐 Web UI (Unified App): http://${HOST}:${PORT}`);
@@ -45,4 +45,16 @@ app.listen(PORT, HOST, () => {
   console.log(`  📂 Database: ${DB_PATH}`);
   console.log(`  👥 Roles Directory: ${ROLES_DIR}`);
   console.log(`=========================================================\n`);
+});
+
+server.on('error', (err: any) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n\x1b[33m⚠️  Port ${PORT} is already in use.\x1b[0m`);
+    console.error(`   Another instance of RixMesh is already running at http://${HOST}:${PORT}`);
+    console.error(`   To restart, terminate the running process first (e.g. kill $(lsof -t -i:${PORT})).\n`);
+    process.exit(1);
+  } else {
+    console.error('Server listen error:', err);
+    process.exit(1);
+  }
 });

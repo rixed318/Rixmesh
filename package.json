@@ -10,7 +10,8 @@
     "rixmesh": "./bin/rixmesh.js"
   },
   "scripts": {
-    "start": "node bin/rixmesh.js start",
+    "start": "node bin/rixmesh.js",
+    "status": "node bin/rixmesh.js status",
     "dev": "pnpm --parallel --filter @rixed-devos/server --filter @rixed-devos/web dev",
     "dev:server": "pnpm --filter @rixed-devos/server dev",
     "dev:web": "pnpm --filter @rixed-devos/web dev",
