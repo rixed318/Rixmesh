@@ -46,4 +46,13 @@ export class ArtifactStore {
   public async readArtifact(filePath: string): Promise<string> {
     return fs.readFile(filePath, 'utf-8');
   }
+
+  public async getArtifactContent(runId: string, filename: string): Promise<string | null> {
+    const targetFile = path.join(this.baseDir, 'artifacts', runId, filename);
+    try {
+      return await fs.readFile(targetFile, 'utf-8');
+    } catch {
+      return null;
+    }
+  }
 }

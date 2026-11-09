@@ -52,9 +52,9 @@ async function runEndToEndVerification() {
     projectId: project.id,
     title: 'Implement Authentication API',
     description: 'Add auth endpoints and session handling',
-    specPath: 'apps/api/src/auth.ts',
+    specPath: 'apps/server/src/auth.ts',
     assigneeRoleId: 'backend-developer',
-    writeScope: ['apps/api/**'],
+    writeScope: ['apps/server/**'],
     priority: 'high',
   });
 
@@ -62,9 +62,9 @@ async function runEndToEndVerification() {
     projectId: project.id,
     title: 'Implement Notification API',
     description: 'Add notification webhook sender',
-    specPath: 'apps/api/src/notifications.ts',
+    specPath: 'packages/domain/src/notifications.ts',
     assigneeRoleId: 'backend-developer',
-    writeScope: ['apps/api/**'],
+    writeScope: ['packages/domain/**'],
     priority: 'medium',
   });
 
@@ -84,10 +84,10 @@ async function runEndToEndVerification() {
   console.log(`  ✓ Dependent Task C:   ${taskFrontend.id} (Depends on A & B)`);
 
   // 3. Parallel Execution in Disjoint Worktrees
-  console.log('▶ [Step 3] Dispatching Independent Tasks A and B in Parallel Worktrees...');
+  console.log('▶ [Step 3] Dispatching Independent Tasks A and B in Parallel Worktrees (Gemini 3.8 Flash High)...');
   const [runA, runB] = await Promise.all([
-    executionService.executeTask(taskBackendA.id, 'mock'),
-    executionService.executeTask(taskBackendB.id, 'mock'),
+    executionService.executeTask(taskBackendA.id, 'gemini'),
+    executionService.executeTask(taskBackendB.id, 'gemini'),
   ]);
 
   console.log(`  ✓ Run A started: ${runA.id} in ${runA.worktreePath}`);
@@ -107,10 +107,13 @@ async function runEndToEndVerification() {
   console.log(`  ✓ Task B merged: commit=${mergeB.commitSha?.slice(0, 8)}`);
 
   // 5. Dependent Task Execution
-  console.log('▶ [Step 5] Executing Dependent Task C now that prerequisites are DONE...');
-  const runC = await executionService.executeTask(taskFrontend.id, 'mock');
+  console.log('▶ [Step 5] Executing Dependent Task C now that prerequisites are DONE (Gemini 3.8 Flash High)...');
+  const runC = await executionService.executeTask(taskFrontend.id, 'gemini');
   await executionService.waitForTask(taskFrontend.id);
   console.log(`  ✓ Task C status: ${taskService.getTask(taskFrontend.id)?.status} (Expected: MERGE_READY)`);
+  if (taskService.getTask(taskFrontend.id)?.status !== 'MERGE_READY') {
+    console.error('Task C Details:', JSON.stringify(taskService.getTask(taskFrontend.id), null, 2));
+  }
 
   const mergeC = await executionService.mergeTask(taskFrontend.id);
   console.log(`  ✓ Task C merged: commit=${mergeC.commitSha?.slice(0, 8)}`);

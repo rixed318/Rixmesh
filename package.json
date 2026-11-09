@@ -13,7 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "tsx tests/e2e/e2e-runner.ts",
-    "typecheck": "tsc --build"
+    "typecheck": "tsc --noEmit && tsc --project apps/web/tsconfig.json"
   },
   "devDependencies": {
     "@types/node": "^22.13.0",

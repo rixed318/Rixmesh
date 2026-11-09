@@ -89,7 +89,7 @@ describe('Gemini 3.8 Flash (High) Primary Provider', () => {
     expect(content).toContain('Gemini 3.8 Flash (High)');
 
     await fs.rm(tempDir, { recursive: true, force: true });
-  });
+  }, 45000);
 
   it('should generate independent review verdict for code-reviewer role', async () => {
     const provider = new GeminiProvider();

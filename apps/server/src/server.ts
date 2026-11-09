@@ -9,6 +9,7 @@ import { TaskService } from './services/task-service.js';
 import { ExecutionService } from './services/execution-service.js';
 import { ProviderRegistry } from '@rixed-devos/providers';
 import { SecretRedactor } from '@rixed-devos/workspaces';
+import { PolicyEngine } from '@rixed-devos/policy';
 
 export interface DevOsServerInstance {
   app: express.Express;
@@ -25,7 +26,42 @@ export function createDevOsServer(options: {
   baseDataDir?: string;
 }): DevOsServerInstance {
   const app = express();
-  app.use(cors());
+
+  // Security: Host & DNS Rebinding validation (Localhost only)
+  app.use((req: Request, res: Response, next) => {
+    const host = req.headers.host || '';
+    const isLocalhost =
+      host.startsWith('localhost:') ||
+      host.startsWith('127.0.0.1:') ||
+      host === 'localhost' ||
+      host === '127.0.0.1';
+
+    if (!isLocalhost && process.env.NODE_ENV !== 'test') {
+      return res.status(403).json({
+        error: 'Forbidden: Access restricted to local connections (localhost / 127.0.0.1).',
+      });
+    }
+    next();
+  });
+
+  // Security: CORS restricted to local origins
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        if (
+          !origin ||
+          origin.startsWith('http://localhost:') ||
+          origin.startsWith('http://127.0.0.1:')
+        ) {
+          callback(null, true);
+        } else {
+          callback(new Error('CORS blocked: Only local origins permitted'));
+        }
+      },
+      credentials: true,
+    })
+  );
+
   app.use(express.json());
 
   const db = new AppDatabase(options.dbPath || ':memory:');
@@ -45,11 +81,12 @@ export function createDevOsServer(options: {
       status: 'ok',
       version: '0.1.0-alpha.1',
       brand: 'RixMesh',
-      defaultModel: 'gemini-3.8-flash',
+      defaultModel: 'gemini-3.8-flash-high',
       security: {
         localhostOnly: true,
         secretRedaction: true,
         symlinkCheck: true,
+        dnsRebindingProtection: true,
       },
       timestamp: new Date().toISOString(),
     });
@@ -74,6 +111,40 @@ export function createDevOsServer(options: {
     const project = projectService.getProject(id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
     res.json(project);
+  });
+
+  // Project Files & Knowledge
+  app.get('/api/projects/:id/files', async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    const subDir = (req.query.subDir as string) || '';
+    try {
+      const files = await projectService.listFiles(id, subDir);
+      res.json(files);
+    } catch (err: any) {
+      res.status(400).json({ error: SecretRedactor.redact(err.message) });
+    }
+  });
+
+  app.get('/api/projects/:id/files/content', async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    const filePath = req.query.path as string;
+    if (!filePath) return res.status(400).json({ error: 'Missing path query parameter' });
+    try {
+      const content = await projectService.readFile(id, filePath);
+      res.json({ path: filePath, content });
+    } catch (err: any) {
+      res.status(400).json({ error: SecretRedactor.redact(err.message) });
+    }
+  });
+
+  app.get('/api/projects/:id/knowledge', async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    try {
+      const docs = await projectService.listKnowledge(id);
+      res.json(docs);
+    } catch (err: any) {
+      res.status(400).json({ error: SecretRedactor.redact(err.message) });
+    }
   });
 
   // Tasks
@@ -104,9 +175,35 @@ export function createDevOsServer(options: {
     res.json(task);
   });
 
+  app.get('/api/tasks/:id/diff', async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    try {
+      const diff = await executionService.getTaskDiff(id);
+      res.json({ taskId: id, diff });
+    } catch (err: any) {
+      res.status(400).json({ error: SecretRedactor.redact(err.message) });
+    }
+  });
+
   app.post('/api/tasks/:id/start', async (req: Request, res: Response) => {
     const id = req.params.id as string;
     try {
+      const task = taskService.getTask(id);
+      if (!task) return res.status(404).json({ error: 'Task not found' });
+
+      const role = roleService.getRole(task.assigneeRoleId);
+      if (role) {
+        const policyEval = PolicyEngine.evaluateAction(role, 'execute_task');
+        if (!policyEval.allowed && policyEval.requiresApproval) {
+          const approvalId = `appr-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+          db.getRawDb().prepare(`
+            INSERT INTO approvals (id, project_id, task_id, run_id, action, command, reason, status, requested_at)
+            VALUES (?, ?, ?, null, 'execute_task', null, ?, 'pending', ?)
+          `).run(approvalId, task.projectId, task.id, policyEval.reason || 'Approval required by policy', new Date().toISOString());
+          return res.status(403).json({ error: 'Action requires approval', approvalId, reason: policyEval.reason });
+        }
+      }
+
       const { providerId } = req.body || {};
       const run = await executionService.executeTask(id, providerId);
       res.status(202).json(run);
@@ -153,7 +250,7 @@ export function createDevOsServer(options: {
 
   app.post('/api/approvals/:id/decide', (req: Request, res: Response) => {
     const id = req.params.id as string;
-    const { decision } = req.body; // 'approved' | 'rejected'
+    const { decision } = req.body;
     if (decision !== 'approved' && decision !== 'rejected') {
       return res.status(400).json({ error: "decision must be 'approved' or 'rejected'" });
     }

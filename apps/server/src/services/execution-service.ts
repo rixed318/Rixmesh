@@ -6,8 +6,14 @@ import { Run, Task, AgentRole, Review } from '@rixed-devos/domain';
 import { GitWorktreeManager, PathScopeValidator, SecretRedactor } from '@rixed-devos/workspaces';
 import { ProviderRegistry, AgentEvent } from '@rixed-devos/providers';
 import { ArtifactStore } from '@rixed-devos/artifacts';
-import { DAGScheduler } from '@rixed-devos/orchestrator';
+import { DAGScheduler, LeaseManager } from '@rixed-devos/orchestrator';
+import { PolicyEngine } from '@rixed-devos/policy';
 import path from 'node:path';
+import fs from 'node:fs';
+import { exec } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execAsync = promisify(exec);
 
 export type EventSubscriber = (event: AgentEvent & { runId: string; taskId: string }) => void;
 
@@ -19,6 +25,7 @@ export class ExecutionService {
   private artifactStore: ArtifactStore;
   private subscribers = new Set<EventSubscriber>();
   private activeRuns = new Map<string, { runId: string; taskId: string; sessionId?: string; providerId: string }>();
+  private leaseManager = new LeaseManager();
   private mergeLock: Promise<void> = Promise.resolve();
 
   private runningPromises = new Map<string, Promise<void>>();
@@ -87,7 +94,7 @@ export class ExecutionService {
   }
 
   /**
-   * Executes a task ensuring prerequisites are met and isolation is enforced.
+   * Executes a task ensuring prerequisites are met and isolation is strictly enforced.
    */
   public async executeTask(taskId: string, requestedProviderId?: string): Promise<Run> {
     const task = this.taskService.getTask(taskId);
@@ -126,9 +133,13 @@ export class ExecutionService {
       }
     }
 
-    // 3. Resolve Provider
+    // 3. Resolve Provider (MockProvider forbidden in user mode)
     const targetProviderId = requestedProviderId || role.spec.compatibleProviders[0] || 'gemini';
-    const { adapter: provider } = await ProviderRegistry.getInstance().resolveProvider(targetProviderId);
+    const isTestMode = process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST);
+    const { adapter: provider } = await ProviderRegistry.getInstance().resolveProvider(
+      targetProviderId,
+      { allowMock: isTestMode }
+    );
 
     const runId = `RUN-${Date.now().toString().slice(-6)}-${Math.random().toString(36).substring(2, 5)}`;
     const now = new Date().toISOString();
@@ -136,8 +147,8 @@ export class ExecutionService {
     // 4. Advance task status to RUNNING
     this.taskService.updateStatus(taskId, 'RUNNING', 'orchestrator', `Run ${runId} started with provider ${provider.id}`);
 
-    // 5. Create isolated Git worktree and dedicated branch
-    let worktreePath = project.rootPath;
+    // 5. Create isolated Git worktree and dedicated branch (NEVER fallback to project.rootPath!)
+    let worktreePath = '';
     let baselineSha = project.baselineSha || 'HEAD';
 
     try {
@@ -150,14 +161,20 @@ export class ExecutionService {
         VALUES (?, ?, ?, ?, ?, ?, 'active', ?)
       `).run(`wt-${runId}`, project.id, taskId, wt.branch, wt.worktreePath, wt.baselineSha, now);
     } catch (err: any) {
-      console.warn(`Worktree creation notice: ${err.message}. Using root project path.`);
+      this.taskService.updateStatus(taskId, 'FAILED', 'orchestrator', `Worktree creation failed: ${err.message}`);
+      throw new Error(
+        `Critical: Failed to create isolated Git worktree for task ${taskId}: ${err.message}. Execution halted to protect user workspace.`
+      );
     }
+
+    // Acquire durable lease
+    this.leaseManager.acquireLease(taskId, runId, provider.id, 60000);
 
     const run: Run = {
       id: runId,
       taskId,
       providerId: provider.id,
-      modelId: role.spec.modelPolicy.preferredModel || 'gemini-3.8-flash',
+      modelId: role.spec.modelPolicy.preferredModel || 'gemini-3.8-flash-high',
       worktreePath,
       status: 'active',
       startedAt: now,
@@ -241,10 +258,12 @@ export class ExecutionService {
             UPDATE runs SET status = ?, finished_at = ? WHERE id = ?
           `).run(currentTask?.status === 'WAITING_USER' ? 'paused' : 'failed', new Date().toISOString(), run.id);
           this.activeRuns.delete(runId);
+          this.leaseManager.releaseLease(taskId, runId);
           return;
         }
 
         if (this.taskService.getTask(taskId)?.status === 'CANCELLED') {
+          this.leaseManager.releaseLease(taskId, runId);
           return;
         }
 
@@ -269,6 +288,33 @@ export class ExecutionService {
         // 8. Quality Gate: Automated tests check
         this.taskService.updateStatus(taskId, 'VERIFYING', 'orchestrator', 'Automated verification started');
 
+        if (role.spec.review.requireAutomatedTests || task.testPlan) {
+          const testCmd = task.testPlan || 'git status --porcelain';
+          let testSuccess = true;
+          let testOutput = '';
+
+          try {
+            const { stdout, stderr } = await execAsync(testCmd, { cwd: worktreePath });
+            testOutput = `Command: ${testCmd}\nExit Code: 0\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}`;
+          } catch (err: any) {
+            testSuccess = false;
+            testOutput = `Command: ${testCmd}\nExit Code: ${err.code || 1}\nSTDOUT:\n${err.stdout || ''}\nSTDERR:\n${err.stderr || err.message}`;
+          }
+
+          // Save test log artifact
+          await this.artifactStore.saveArtifact(runId, 'test_log', 'test.log', SecretRedactor.redact(testOutput));
+
+          if (!testSuccess) {
+            this.taskService.updateStatus(taskId, 'FAILED', 'orchestrator', `Quality Gate Failure: Automated tests failed. See test.log.`);
+            this.db.getRawDb().prepare(`
+              UPDATE runs SET status = 'failed', finished_at = ? WHERE id = ?
+            `).run(new Date().toISOString(), run.id);
+            this.activeRuns.delete(runId);
+            this.leaseManager.releaseLease(taskId, runId);
+            return;
+          }
+        }
+
         // 9. Peer Review Gate: Independent Reviewer
         if (role.spec.review.requireIndependentReviewer) {
           this.taskService.updateStatus(taskId, 'REVIEW_PENDING', 'orchestrator', 'Pending peer code review');
@@ -278,6 +324,7 @@ export class ExecutionService {
             // Task rejected! Sent to REWORK
             this.taskService.updateStatus(taskId, 'REWORK', 'code-reviewer', review.summary);
             this.activeRuns.delete(runId);
+            this.leaseManager.releaseLease(taskId, runId);
             return;
           }
         }
@@ -302,6 +349,7 @@ export class ExecutionService {
       } finally {
         this.activeRuns.delete(runId);
         this.runningPromises.delete(taskId);
+        this.leaseManager.releaseLease(taskId, runId);
         resolveTaskPromise();
       }
     })();
@@ -336,7 +384,7 @@ export class ExecutionService {
       spec: {
         purpose: 'Independent code review',
         compatibleProviders: [providerId],
-        modelPolicy: { tier: 'high', preferredModel: 'gemini-3.8-flash', allowFallback: true },
+        modelPolicy: { tier: 'high', preferredModel: 'gemini-3.8-flash-high', allowFallback: true },
         autonomy: 'read-only' as const,
         permissions: { read: ['**/*'], write: [], forbidden: ['*'], tools: [], network: 'denied' as const, approvalRequired: [] },
         skills: [],
@@ -344,7 +392,11 @@ export class ExecutionService {
       },
     };
 
-    const { adapter: reviewerProvider } = await ProviderRegistry.getInstance().resolveProvider(providerId);
+    const isTestMode = process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST);
+    const { adapter: reviewerProvider } = await ProviderRegistry.getInstance().resolveProvider(
+      providerId,
+      { allowMock: isTestMode }
+    );
 
     const { sessionId } = await reviewerProvider.startSession({
       cwd: '',
@@ -352,7 +404,7 @@ export class ExecutionService {
       task: this.taskService.getTask(taskId)!,
       instructions: `Review the following unified diff:\n\n${diff}`,
       baselineCommit: baselineSha,
-      model: 'gemini-3.8-flash',
+      model: 'gemini-3.8-flash-high',
       allowedTools: [],
     });
 
@@ -400,9 +452,37 @@ export class ExecutionService {
   }
 
   /**
-   * Safely merges a task branch using a sequential merge queue to avoid git race conditions.
+   * Retrieves unified git diff for a task from its active worktree or latest artifact.
    */
-  public async mergeTask(taskId: string): Promise<{ success: boolean; commitSha?: string; error?: string }> {
+  public async getTaskDiff(taskId: string): Promise<string> {
+    const wt = this.db.getRawDb().prepare(`
+      SELECT path, baseline_sha FROM worktrees WHERE task_id = ? ORDER BY created_at DESC LIMIT 1
+    `).get(taskId) as { path: string; baseline_sha: string } | undefined;
+
+    if (wt && wt.path && fs.existsSync(wt.path)) {
+      try {
+        const diff = await GitWorktreeManager.getDiff(wt.path, wt.baseline_sha);
+        if (diff) return diff;
+      } catch {}
+    }
+
+    const run = this.db.getRawDb().prepare(`
+      SELECT id FROM runs WHERE task_id = ? ORDER BY started_at DESC LIMIT 1
+    `).get(taskId) as { id: string } | undefined;
+
+    if (run) {
+      const patch = await this.artifactStore.getArtifactContent(run.id, 'diff.patch');
+      if (patch) return patch;
+    }
+
+    return '';
+  }
+
+  /**
+   * Safely merges a task branch using a sequential merge queue to avoid git race conditions.
+   * Strictly enforces positive code review approval and verified diff.
+   */
+  public async mergeTask(taskId: string): Promise<{ success: boolean; commitSha?: string; error?: string; conflict?: boolean }> {
     const task = this.taskService.getTask(taskId);
     if (!task) throw new Error(`Task ${taskId} not found`);
 
@@ -410,12 +490,18 @@ export class ExecutionService {
       throw new Error(`Task ${taskId} is not in MERGE_READY state (current: ${task.status})`);
     }
 
+    const role = this.roleService.getRole(task.assigneeRoleId);
+
     // Verify latest review is approved
     const latestReview = this.db.getRawDb().prepare(`
       SELECT verdict FROM reviews WHERE task_id = ? ORDER BY created_at DESC LIMIT 1
     `).get(taskId) as { verdict?: string } | undefined;
 
-    if (latestReview && latestReview.verdict !== 'approved') {
+    if (role?.spec.review.requireIndependentReviewer) {
+      if (!latestReview || latestReview.verdict !== 'approved') {
+        throw new Error(`Cannot merge: latest code review verdict is '${latestReview?.verdict || 'none'}', must be 'approved'`);
+      }
+    } else if (latestReview && latestReview.verdict !== 'approved') {
       throw new Error(`Cannot merge: latest code review verdict is '${latestReview.verdict}', not 'approved'`);
     }
 
@@ -457,6 +543,35 @@ export class ExecutionService {
   }
 
   /**
+   * Automatically scans project DAG for ready executable tasks and triggers them.
+   */
+  public async processQueue(projectId: string): Promise<string[]> {
+    const tasks = this.taskService.listTasks(projectId);
+    const deps = this.taskService.listDependencies(projectId);
+    const executable = DAGScheduler.getExecutableTasks(tasks, deps);
+    const startedTaskIds: string[] = [];
+
+    for (const task of executable) {
+      // Check collision with running tasks
+      let hasCollision = false;
+      for (const active of this.activeRuns.values()) {
+        const activeTask = this.taskService.getTask(active.taskId);
+        if (activeTask && DAGScheduler.hasScopeCollision(task, activeTask)) {
+          hasCollision = true;
+          break;
+        }
+      }
+
+      if (!hasCollision) {
+        await this.executeTask(task.id);
+        startedTaskIds.push(task.id);
+      }
+    }
+
+    return startedTaskIds;
+  }
+
+  /**
    * Cancels a running task and its associated provider session.
    */
   public async cancelTask(taskId: string): Promise<void> {
@@ -467,6 +582,7 @@ export class ExecutionService {
         await provider.cancel(active.sessionId);
       }
       this.activeRuns.delete(active.runId);
+      this.leaseManager.releaseLease(taskId, active.runId);
       this.db.getRawDb().prepare(`
         UPDATE runs SET status = 'cancelled', finished_at = ? WHERE id = ?
       `).run(new Date().toISOString(), active.runId);

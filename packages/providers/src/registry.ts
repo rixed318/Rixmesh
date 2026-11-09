@@ -62,31 +62,57 @@ export class ProviderRegistry {
   }
 
   /**
-   * Resolves the requested provider, falling back safely if unavailable.
+   * Resolves the requested provider, strictly forbidding silent fallback to MockProvider.
+   * MockProvider is only permitted if explicitly requested or in test mode.
    */
-  public async resolveProvider(requestedId?: string): Promise<{ adapter: CodingAgentAdapter; isFallback: boolean; fallbackReason?: string }> {
+  public async resolveProvider(
+    requestedId?: string,
+    options?: { allowMock?: boolean }
+  ): Promise<{ adapter: CodingAgentAdapter; isFallback: boolean; fallbackReason?: string }> {
     const targetId = requestedId || this.defaultProviderId;
-    const adapter = this.adapters.get(targetId);
+    const isTestEnv = process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST);
 
-    if (adapter) {
-      const probe = await adapter.probe();
-      if (probe.available) {
-        return { adapter, isFallback: false };
+    if (targetId === 'mock') {
+      if (!options?.allowMock && !isTestEnv && process.env.DEVOS_ALLOW_MOCK !== 'true') {
+        throw new Error(
+          `MockProvider is disabled in production/user mode. Select an active provider (gemini, codex, claude).`
+        );
       }
-      // If requested was unavailable, fallback
-      const fallback = this.adapters.get('mock') || this.adapters.get('gemini')!;
-      return {
-        adapter: fallback,
-        isFallback: true,
-        fallbackReason: `Requested provider '${targetId}' is unavailable (${probe.reason}). Falling back to '${fallback.id}'.`,
-      };
+      return { adapter: this.get('mock'), isFallback: false };
     }
 
-    const fallback = this.adapters.get('mock') || this.adapters.get('gemini')!;
-    return {
-      adapter: fallback,
-      isFallback: true,
-      fallbackReason: `Requested provider '${targetId}' not found. Falling back to '${fallback.id}'.`,
-    };
+    const adapter = this.adapters.get(targetId);
+    if (!adapter) {
+      if (isTestEnv || options?.allowMock) {
+        const fallback = this.adapters.get('mock') || this.adapters.get('gemini')!;
+        return {
+          adapter: fallback,
+          isFallback: true,
+          fallbackReason: `Requested provider '${targetId}' not found. Falling back to '${fallback.id}'.`,
+        };
+      }
+      throw new Error(`Provider adapter '${targetId}' is not registered`);
+    }
+
+    const probe = await adapter.probe();
+    if (probe.available) {
+      return { adapter, isFallback: false };
+    }
+
+    // Provider is unavailable! Silent fallback to Mock is strictly prohibited.
+    if (options?.allowMock) {
+      const mock = this.adapters.get('mock');
+      if (mock) {
+        return {
+          adapter: mock,
+          isFallback: true,
+          fallbackReason: `Requested provider '${targetId}' is unavailable (${probe.reason}). Explicit mock fallback allowed.`,
+        };
+      }
+    }
+
+    throw new Error(
+      `Requested provider '${targetId}' is unavailable: ${probe.reason || 'probe failed'}. Please configure '${targetId}' or select an active provider.`
+    );
   }
 }

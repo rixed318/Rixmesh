@@ -157,6 +157,13 @@ export class TaskService {
   public logAudit(projectId: string, taskId?: string, runId?: string, actor: string = 'system', type: string = 'event', payload: any = {}): void {
     const rawDb = this.db.getRawDb();
     const id = `audit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    
+    // Durable persistent sequence across server restarts
+    const row = rawDb.prepare(`
+      SELECT COALESCE(MAX(seq), 0) + 1 AS next_seq FROM audit_events WHERE project_id = ?
+    `).get(projectId) as { next_seq: number } | undefined;
+    const nextSeq = row?.next_seq || 1;
+
     rawDb.prepare(`
       INSERT INTO audit_events (id, project_id, task_id, run_id, seq, actor, type, payload_json, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -165,7 +172,7 @@ export class TaskService {
       projectId,
       taskId || null,
       runId || null,
-      this.seqCounter++,
+      nextSeq,
       actor,
       type,
       JSON.stringify(payload),

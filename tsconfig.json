@@ -2,6 +2,7 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "baseUrl": ".",
+    "noEmit": true,
     "paths": {
       "@rixed-devos/domain": ["packages/domain/src/index.ts"],
       "@rixed-devos/orchestrator": ["packages/orchestrator/src/index.ts"],
@@ -11,5 +12,5 @@
       "@rixed-devos/artifacts": ["packages/artifacts/src/index.ts"]
     }
   },
-  "include": ["packages/*/src/**/*", "apps/*/src/**/*", "tests/**/*"]
+  "include": ["packages/*/src/**/*", "apps/server/src/**/*", "tests/**/*"]
 }

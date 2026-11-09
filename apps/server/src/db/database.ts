@@ -11,6 +11,8 @@ export class AppDatabase {
     }
     this.db = new DatabaseSync(dbPath);
     this.db.exec('PRAGMA foreign_keys = ON;');
+    this.db.exec('PRAGMA journal_mode = WAL;');
+    this.db.exec('PRAGMA synchronous = NORMAL;');
     this.migrate();
   }
 

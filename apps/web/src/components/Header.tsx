@@ -5,8 +5,8 @@ interface HeaderProps {
   currentProject: any;
   projects: any[];
   onSelectProject: (id: string) => void;
-  activeTab: 'kanban' | 'dag' | 'agents' | 'providers';
-  onTabChange: (tab: 'kanban' | 'dag' | 'agents' | 'providers') => void;
+  activeTab: 'kanban' | 'dag' | 'agents' | 'providers' | 'code';
+  onTabChange: (tab: 'kanban' | 'dag' | 'agents' | 'providers' | 'code') => void;
   onNewTask: () => void;
   onRefresh: () => void;
 }
@@ -98,6 +98,16 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             Providers & Models
+          </button>
+          <button
+            onClick={() => onTabChange('code')}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+              activeTab === 'code'
+                ? 'bg-[#21262d] text-white shadow'
+                : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            Code & Workspaces
           </button>
         </nav>
       </div>

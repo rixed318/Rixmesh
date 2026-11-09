@@ -6,22 +6,22 @@ RixMesh (formerly Rixed DevOS) acknowledges and attributes the following open-so
 
 1. **T3 Code** (`pingdotgg/t3code`)
    - **License:** MIT License
-   - **Upstream SHA:** `7e2b10a4f5c9` (latest 2026 baseline)
+   - **Upstream SHA:** `a9e709f15f825cacac1b6d665fa1920c328d68b7` (verified upstream baseline)
    - **Contribution:** Control plane UI patterns, worktree session management concepts, Bring-Your-Own-Subscription (BYOS) agent harness model.
 
 2. **Orca** (`stablyai/orca`)
    - **License:** MIT License
-   - **Upstream SHA:** `d3a41c9b2e88`
+   - **Upstream SHA:** `bdeb388d75120b6e36dd619291286de0cc9aae02`
    - **Contribution:** Multi-agent fleet concurrent dispatch and desktop runtime architectural reference.
 
 3. **Emdash** (`generalaction/emdash`)
    - **License:** Apache License 2.0
-   - **Upstream SHA:** `91b58f0e21a7`
+   - **Upstream SHA:** `9346e9130902a0eac126c1cc37aa10b125eea99b`
    - **Contribution:** Desktop orchestration patterns, review queues, and multi-worktree handling.
 
 4. **Paseo** (`getpaseo/paseo`)
    - **License:** Apache License 2.0
-   - **Upstream SHA:** `f4c82b1d3a05`
+   - **Upstream SHA:** `d92495487fcb93f72eaa3f40250e51e276daa589`
    - **Contribution:** ACP (Agent Client Protocol) provider daemon architecture and multi-surface client patterns.
 
 ## 2. Core Execution Engines & Protocols

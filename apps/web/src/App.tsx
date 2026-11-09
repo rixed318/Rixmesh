@@ -6,9 +6,10 @@ import { AgentMonitor } from './components/AgentMonitor';
 import { ProvidersTab } from './components/ProvidersTab';
 import { TaskDetailModal } from './components/TaskDetailModal';
 import { NewTaskModal } from './components/NewTaskModal';
+import { CodeEditorTab } from './components/CodeEditorTab';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'kanban' | 'dag' | 'agents' | 'providers'>('kanban');
+  const [activeTab, setActiveTab] = useState<'kanban' | 'dag' | 'agents' | 'providers' | 'code'>('kanban');
   const [projects, setProjects] = useState<any[]>([]);
   const [currentProject, setCurrentProject] = useState<any>(null);
   const [tasks, setTasks] = useState<any[]>([]);
@@ -133,7 +134,7 @@ export default function App() {
       <Header
         currentProject={currentProject}
         projects={projects}
-        onSelectProject={(id) => {
+        onSelectProject={(id: string) => {
           const p = projects.find((x) => x.id === id);
           setCurrentProject(p);
         }}
@@ -164,6 +165,8 @@ export default function App() {
         {activeTab === 'agents' && <AgentMonitor roles={roles} />}
 
         {activeTab === 'providers' && <ProvidersTab providers={providers} />}
+
+        {activeTab === 'code' && <CodeEditorTab currentProject={currentProject} tasks={tasks} />}
       </main>
 
       {/* Task Detail Modal */}

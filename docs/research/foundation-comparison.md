@@ -27,7 +27,7 @@ Per Section 2 of `Rixed_DevOS_Architecture_and_Implementation_SPEC.md`, we evalu
 
 ### 2.1. Candidate A: `pingdotgg/t3code`
 - **Upstream Repository:** `https://github.com/pingdotgg/t3code`
-- **Baseline Commit SHA:** `7e2b10a4f5c9`
+- **Baseline Commit SHA:** `a9e709f15f825cacac1b6d665fa1920c328d68b7`
 - **License:** MIT License
 - **Tech Stack:** Next.js, React, TypeScript, Electron, Tailwind CSS, pnpm monorepo.
 - **Architectural Model:** Desktop/web/mobile harness wrapping terminal-based coding CLIs (Claude Code, Codex, OpenCode, Antigravity). Uses Git worktrees to isolate human-started sessions.
@@ -38,7 +38,7 @@ Per Section 2 of `Rixed_DevOS_Architecture_and_Implementation_SPEC.md`, we evalu
 
 ### 2.2. Candidate B: `stablyai/orca`
 - **Upstream Repository:** `https://github.com/stablyai/orca`
-- **Baseline Commit SHA:** `d3a41c9b2e88`
+- **Baseline Commit SHA:** `bdeb388d75120b6e36dd619291286de0cc9aae02`
 - **License:** MIT License
 - **Tech Stack:** Rust (Tauri), React, TypeScript, Vite.
 - **Architectural Model:** Multi-agent workspace running concurrent agent sessions in isolated Git worktrees.
@@ -49,7 +49,7 @@ Per Section 2 of `Rixed_DevOS_Architecture_and_Implementation_SPEC.md`, we evalu
 
 ### 2.3. Candidate C: `generalaction/emdash`
 - **Upstream Repository:** `https://github.com/generalaction/emdash`
-- **Baseline Commit SHA:** `91b58f0e21a7`
+- **Baseline Commit SHA:** `9346e9130902a0eac126c1cc37aa10b125eea99b`
 - **License:** Apache License 2.0
 - **Tech Stack:** Electron, Node.js, React.
 - **Architectural Model:** Desktop application for running multiple CLI agents simultaneously with SSH remote execution and diff reviewing.
@@ -60,7 +60,7 @@ Per Section 2 of `Rixed_DevOS_Architecture_and_Implementation_SPEC.md`, we evalu
 
 ### 2.4. Candidate D: `getpaseo/paseo`
 - **Upstream Repository:** `https://github.com/getpaseo/paseo`
-- **Baseline Commit SHA:** `f4c82b1d3a05`
+- **Baseline Commit SHA:** `d92495487fcb93f72eaa3f40250e51e276daa589`
 - **License:** Apache License 2.0
 - **Tech Stack:** Go (daemon/server), TypeScript/React (frontend), Tauri.
 - **Architectural Model:** Decoupled daemon providing Agent Client Protocol (ACP) interfaces to connect any ACP-compliant coding agent.
